@@ -13,7 +13,7 @@ import (
 )
 
 func Run() {
-	logger, err := zap.NewProduction()
+	logger, err := zap.NewDevelopment()
 	if err != nil {
 		logger.Fatal("Logger init error")
 	}
@@ -23,6 +23,8 @@ func Run() {
 
 	sugar.Info("router init")
 	router := gin.Default()
+	gin.SetMode(gin.DebugMode)
+	router.SetTrustedProxies(nil)
 
 	sugar.Info("postgresql init")
 	postgresql, err := postgres.New(sugar)
@@ -41,7 +43,7 @@ func Run() {
 	controller.NewRouter(sugar, router, services)
 
 	sugar.Info("starting app...")
-	err = router.Run()
+	err = router.Run(":8080")
 	if err != nil {
 		sugar.Fatal(os.Stderr, "error running router", err)
 		os.Exit(1)
