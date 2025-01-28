@@ -6,7 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/p1xart/shortner-service/entity"
+	"github.com/p1xart/shortner-service/internal/entity"
 	"github.com/p1xart/shortner-service/internal/repo/codes"
 	"github.com/p1xart/shortner-service/internal/repo/repoerrors"
 	"go.uber.org/zap"

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/p1xart/shortner-service/entity"
+	"github.com/p1xart/shortner-service/internal/entity"
 	"github.com/p1xart/shortner-service/internal/config"
 	"github.com/p1xart/shortner-service/internal/controller/request"
 	"github.com/p1xart/shortner-service/internal/controller/response"
