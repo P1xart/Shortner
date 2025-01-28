@@ -60,7 +60,7 @@ func (s *ShortnerService) ReduceLink(ctx context.Context, srcLink string) (strin
 				if repeats < 2 {
 					continue
 				}
-				return "", err
+				return "", ErrLinkExists
 			}
 			s.log.Errorln("failed to create short link", zap.String("source link", srcLink), zap.Error(err))
 			return "", err
@@ -70,6 +70,17 @@ func (s *ShortnerService) ReduceLink(ctx context.Context, srcLink string) (strin
 
 	s.log.Debugln("created new link", zap.String("source link", srcLink), zap.String("short link", reduceLink))
 	return reduceLink, nil
+}
+
+func (s *ShortnerService) GetSourceByShort(ctx context.Context, shortLink string) (string, error) {
+	sourceLink, err := s.repo.GetSourceByShort(ctx, shortLink)
+	if err != nil {
+		if errors.Is(err, repoerrors.ErrNotFound) {
+			return "", ErrLinkNotFound
+		}
+	}
+
+	return sourceLink, nil
 }
 
 func randStringRunes(lenght int, letterRunes []rune) string {

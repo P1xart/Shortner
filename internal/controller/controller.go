@@ -2,11 +2,13 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"regexp"
 
 	"github.com/p1xart/shortner-service/internal/controller/request"
 	"github.com/p1xart/shortner-service/internal/controller/response"
+	"github.com/p1xart/shortner-service/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -14,6 +16,7 @@ import (
 
 type Shortner interface {
 	ReduceLink(ctx context.Context, srcLink string) (string, error)
+	GetSourceByShort(ctx context.Context, shortLink string) (string, error)
 }
 
 type shortnerRoutes struct {
@@ -32,6 +35,7 @@ func NewRouter(log *zap.SugaredLogger, router *gin.Engine, service Shortner) {
 	}
 
 	router.POST("/", r.reduceLink)
+	router.GET("/:shortLink", r.getShortLink)
 }
 
 func (r *shortnerRoutes) reduceLink(c *gin.Context) {
@@ -46,7 +50,7 @@ func (r *shortnerRoutes) reduceLink(c *gin.Context) {
 
 	matched, err := regexp.MatchString(`^(https?:\/\/)?([\w-]{1,32}\.[\w-]{1,32})[^\s@]*$`, request.SrcLink)
 	if err != nil {
-		r.log.Debugln("failed to match", zap.String("string", request.SrcLink), zap.Error(err))
+		r.log.Errorln("failed to match", zap.String("string", request.SrcLink), zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -73,6 +77,32 @@ func (r *shortnerRoutes) reduceLink(c *gin.Context) {
 	response := response.GetLink{
 		SrcLink:   request.SrcLink,
 		ShortLink: reduceLink,
+	}
+	c.JSON(http.StatusCreated, response)
+}
+
+func (r *shortnerRoutes) getShortLink(c *gin.Context) {
+	shortLink := c.Param("shortLink")
+
+	sourceLink, err := r.service.GetSourceByShort(c, shortLink)
+	if err != nil {
+		if errors.Is(err, service.ErrLinkNotFound) {
+			r.log.Debugln("link not exists", zap.String("short link", shortLink))
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": service.ErrLinkNotFound.Error(),
+			})
+			return
+		}
+		r.log.Errorln("failed to get short link", zap.String("short link", shortLink))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	response := response.GetLink{
+		SrcLink:   sourceLink,
+		ShortLink: shortLink,
 	}
 	c.JSON(http.StatusCreated, response)
 }
