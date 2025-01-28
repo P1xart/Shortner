@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"regexp"
 
+	"github.com/p1xart/shortner-service/entity"
 	"github.com/p1xart/shortner-service/internal/config"
 	"github.com/p1xart/shortner-service/internal/controller/request"
 	"github.com/p1xart/shortner-service/internal/controller/response"
@@ -18,7 +19,7 @@ import (
 
 type Shortner interface {
 	ReduceLink(ctx context.Context, srcLink string) (string, error)
-	GetSourceByShort(ctx context.Context, shortLink string) (string, error)
+	GetSourceByShort(ctx context.Context, shortLink string) (entity.LinkDTO, error)
 	IncrementVisitsByShort(ctx context.Context, shortLink string) error
 }
 
@@ -119,8 +120,9 @@ func (r *shortnerRoutes) getShortLink(c *gin.Context) {
 	}
 
 	response := response.GetLink{
-		SrcLink:   sourceLink,
+		SrcLink:   sourceLink.SourceLink,
 		ShortLink: fmt.Sprintf("%s/%s", config.DOMAIN, shortLink),
+		Visits: sourceLink.Visits,
 	}
 	c.JSON(http.StatusCreated, response)
 }

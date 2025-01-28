@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math/rand"
 
+	"github.com/p1xart/shortner-service/entity"
 	"github.com/p1xart/shortner-service/internal/repo/repoerrors"
 	"go.uber.org/zap"
 )
@@ -12,7 +13,7 @@ import (
 type Shortner interface {
 	ReduceLink(ctx context.Context, srcLink, reduceLink string) error
 	GetShortBySource(ctx context.Context, srcLink string) (string, error)
-	GetSourceByShort(ctx context.Context, shortLink string) (string, error)
+	GetSourceByShort(ctx context.Context, shortLink string) (entity.LinkDTO, error)
 	IncrementVisitsByShort(ctx context.Context, shortLink string) error
 }
 
@@ -73,11 +74,11 @@ func (s *ShortnerService) ReduceLink(ctx context.Context, srcLink string) (strin
 	return reduceLink, nil
 }
 
-func (s *ShortnerService) GetSourceByShort(ctx context.Context, shortLink string) (string, error) {
+func (s *ShortnerService) GetSourceByShort(ctx context.Context, shortLink string) (entity.LinkDTO, error) {
 	sourceLink, err := s.repo.GetSourceByShort(ctx, shortLink)
 	if err != nil {
 		if errors.Is(err, repoerrors.ErrNotFound) {
-			return "", ErrLinkNotFound
+			return entity.LinkDTO{}, ErrLinkNotFound
 		}
 	}
 

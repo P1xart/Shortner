@@ -6,6 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/p1xart/shortner-service/entity"
 	"github.com/p1xart/shortner-service/internal/repo/codes"
 	"github.com/p1xart/shortner-service/internal/repo/repoerrors"
 	"go.uber.org/zap"
@@ -68,20 +69,21 @@ func (r *Repo) GetShortBySource(ctx context.Context, srcLink string) (string, er
 	return shortLink, nil
 }
 
-func (r *Repo) GetSourceByShort(ctx context.Context, shortLink string) (string, error) {
+func (r *Repo) GetSourceByShort(ctx context.Context, shortLink string) (entity.LinkDTO, error) {
 	var srcLink string
-	query := "SELECT src_link FROM links WHERE short_link=$1;"
+	var visits int
+	query := "SELECT src_link, visits FROM links WHERE short_link=$1;"
 
-	if err := r.pg.QueryRow(ctx, query, shortLink).Scan(&srcLink); err != nil {
+	if err := r.pg.QueryRow(ctx, query, shortLink).Scan(&srcLink, &visits); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			r.log.Debugln("link not exists", zap.String("short link", shortLink), zap.Error(err))
-			return "", repoerrors.ErrNotFound
+			return entity.LinkDTO{}, repoerrors.ErrNotFound
 		}
 		r.log.Errorln("failed get source link by short link", zap.String("short link", srcLink), zap.String("source link", srcLink), zap.Error(err))
-		return "", err
+		return entity.LinkDTO{}, err
 	}
 
-	return srcLink, nil
+	return entity.LinkDTO{SourceLink: srcLink, Visits: visits}, nil
 }
 
 func (r *Repo) IncrementVisitsByShort(ctx context.Context, shortLink string) error {
