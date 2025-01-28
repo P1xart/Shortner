@@ -13,6 +13,7 @@ type Shortner interface {
 	ReduceLink(ctx context.Context, srcLink, reduceLink string) error
 	GetShortBySource(ctx context.Context, srcLink string) (string, error)
 	GetSourceByShort(ctx context.Context, shortLink string) (string, error)
+	IncrementVisitsByShort(ctx context.Context, shortLink string) error
 }
 
 type ShortnerService struct {
@@ -81,6 +82,17 @@ func (s *ShortnerService) GetSourceByShort(ctx context.Context, shortLink string
 	}
 
 	return sourceLink, nil
+}
+
+func (s *ShortnerService) IncrementVisitsByShort(ctx context.Context, shortLink string) error {
+	if err := s.repo.IncrementVisitsByShort(ctx, shortLink); err != nil {
+		if errors.Is(err, repoerrors.ErrNotFound) {
+			return ErrLinkNotFound
+		}
+		return err
+	}
+
+	return nil
 }
 
 func randStringRunes(lenght int, letterRunes []rune) string {

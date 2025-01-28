@@ -74,12 +74,28 @@ func (r *Repo) GetSourceByShort(ctx context.Context, shortLink string) (string, 
 
 	if err := r.pg.QueryRow(ctx, query, shortLink).Scan(&srcLink); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			r.log.Debugln("link not exists", zap.String("short link", srcLink), zap.Error(err))
+			r.log.Debugln("link not exists", zap.String("short link", shortLink), zap.Error(err))
 			return "", repoerrors.ErrNotFound
 		}
-		r.log.Errorln("failed get source link by short link", zap.String("short link", srcLink), zap.Error(err))
+		r.log.Errorln("failed get source link by short link", zap.String("short link", srcLink), zap.String("source link", srcLink), zap.Error(err))
 		return "", err
 	}
 
 	return srcLink, nil
+}
+
+func (r *Repo) IncrementVisitsByShort(ctx context.Context, shortLink string) error {
+	query := "UPDATE links SET visits=visits+1 WHERE short_link=$1"
+
+	tag, err := r.pg.Exec(ctx, query, shortLink)
+	if err != nil {
+		r.log.Errorln("failed to increment visit", zap.String("short link", shortLink), zap.Error(err))
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		r.log.Debugln("link not exists", zap.String("short link", shortLink), zap.Error(err))
+		return repoerrors.ErrNotFound
+	}
+
+	return nil
 }

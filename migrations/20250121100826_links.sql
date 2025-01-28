@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS links (
     short_link VARCHAR(128) NOT NULL UNIQUE,
     visits INTEGER NOT NULL DEFAULT 0
 );
+
+CREATE INDEX src_short_index ON links(src_link, short_link);
 -- +goose StatementEnd
 
 -- +goose Down

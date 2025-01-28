@@ -3,9 +3,11 @@ package controller
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
 
+	"github.com/p1xart/shortner-service/internal/config"
 	"github.com/p1xart/shortner-service/internal/controller/request"
 	"github.com/p1xart/shortner-service/internal/controller/response"
 	"github.com/p1xart/shortner-service/internal/service"
@@ -17,6 +19,7 @@ import (
 type Shortner interface {
 	ReduceLink(ctx context.Context, srcLink string) (string, error)
 	GetSourceByShort(ctx context.Context, shortLink string) (string, error)
+	IncrementVisitsByShort(ctx context.Context, shortLink string) error
 }
 
 type shortnerRoutes struct {
@@ -76,7 +79,7 @@ func (r *shortnerRoutes) reduceLink(c *gin.Context) {
 
 	response := response.GetLink{
 		SrcLink:   request.SrcLink,
-		ShortLink: reduceLink,
+		ShortLink: fmt.Sprintf("%s/%s", config.DOMAIN, reduceLink),
 	}
 	c.JSON(http.StatusCreated, response)
 }
@@ -100,9 +103,24 @@ func (r *shortnerRoutes) getShortLink(c *gin.Context) {
 		return
 	}
 
+	if err = r.service.IncrementVisitsByShort(c, shortLink); err != nil {
+		if errors.Is(err, service.ErrLinkNotFound) {
+			r.log.Debugln("link not exists", zap.String("short link", shortLink))
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": service.ErrLinkNotFound.Error(),
+			})
+			return
+		}
+		r.log.Errorln("failed to increment link", zap.String("short link", shortLink))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
 	response := response.GetLink{
 		SrcLink:   sourceLink,
-		ShortLink: shortLink,
+		ShortLink: fmt.Sprintf("%s/%s", config.DOMAIN, shortLink),
 	}
 	c.JSON(http.StatusCreated, response)
 }
