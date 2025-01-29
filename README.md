@@ -48,6 +48,7 @@ domain.com/5KdE4
 
 ## Запуск:
 1) В файле `shortner-service/internal/config/config.go` изменить константу *DOMEN* на своё значение.
-2) `$ sudo docker compose up --build`
+2) `$ sudo docker compose up --build` - запуск сервисов со сборкой
+3) `goose -dir ./migrations postgres "postgres://postgres:5432@localhost:5432/shortner" up` - запуск миграций
 
 
